@@ -1,0 +1,20 @@
+GitHub Repository Link:
+
+https://github.com/christophertonn/jenkins-cicd-microservices
+
+Repository enthält:
+- Vollständige Microservice Implementierung (cast-service, movie-service)  
+- Jenkinsfile mit kompletter CI/CD Pipeline
+- Helm Charts für Kubernetes Deployment
+- Docker Build und Deployment Scripts
+- Umfassende Dokumentation im README.md
+
+Pipeline Features:
+✅ Automatischer Build beider Services
+✅ Container Tests mit curl Health Checks  
+✅ Push zu DockerHub (christophertonn/*)
+✅ Deployment zu dev, qa, staging
+✅ Manuelle Freigabe für Production
+✅ Parallel Builds für bessere Performance
+✅ Automatische Versionierung
+✅ Cleanup nach Pipeline-Ausführung

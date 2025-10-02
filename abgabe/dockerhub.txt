@@ -1,0 +1,24 @@
+DockerHub Repository Links:
+
+Cast Service:
+https://hub.docker.com/r/christophertonn/cast-service
+
+Movie Service:  
+https://hub.docker.com/r/christophertonn/movie-service
+
+Verfügbare Tags:
+- latest (neueste Version)
+- Build-spezifische Tags (YYYYMMDD-HHMMSS-git-hash)
+- Version Tags (v1.0.0, v1.1.0, etc.)
+
+Images sind öffentlich verfügbar und können mit folgenden Commands verwendet werden:
+
+docker pull christophertonn/cast-service:latest
+docker pull christophertonn/movie-service:latest
+
+Die Images werden automatisch durch die Jenkins Pipeline gebaut und gepusht:
+✅ Python 3.8-slim base image
+✅ FastAPI Application  
+✅ Port 80 exposed
+✅ Uvicorn ASGI Server
+✅ Optimiert für Kubernetes Deployment
