@@ -2,9 +2,7 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('DOCKER_HUB_PASS')
-        KUBE_CONFIG = credentials('config')
-        DOCKER_REGISTRY = 'christophertonn'
+        DOCKER_REGISTRY = 'ctonn3000'
         BUILD_NUMBER = "${env.BUILD_NUMBER}"
         GIT_COMMIT_SHORT = "${env.GIT_COMMIT[0..7]}"
         IMAGE_TAG = "${BUILD_NUMBER}-${GIT_COMMIT_SHORT}"
@@ -94,19 +92,21 @@ pipeline {
             steps {
                 script {
                     echo "Pushing Docker images to DockerHub"
-                    sh """
-                        echo \$DOCKER_HUB_CREDENTIALS_PSW | docker login -u \$DOCKER_HUB_CREDENTIALS_USR --password-stdin
-                        
-                        # Push Cast Service
-                        docker push ${DOCKER_REGISTRY}/cast-service:${IMAGE_TAG}
-                        docker push ${DOCKER_REGISTRY}/cast-service:latest
-                        
-                        # Push Movie Service
-                        docker push ${DOCKER_REGISTRY}/movie-service:${IMAGE_TAG}
-                        docker push ${DOCKER_REGISTRY}/movie-service:latest
-                        
-                        docker logout
-                    """
+                    withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB_PASS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh """
+                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                            
+                            # Push Cast Service
+                            docker push ${DOCKER_REGISTRY}/cast-service:${IMAGE_TAG}
+                            docker push ${DOCKER_REGISTRY}/cast-service:latest
+                            
+                            # Push Movie Service
+                            docker push ${DOCKER_REGISTRY}/movie-service:${IMAGE_TAG}
+                            docker push ${DOCKER_REGISTRY}/movie-service:latest
+                            
+                            docker logout
+                        """
+                    }
                 }
             }
         }
@@ -115,26 +115,28 @@ pipeline {
             steps {
                 script {
                     echo "Deploying to Development environment"
-                    sh """
-                        export KUBECONFIG=\$KUBE_CONFIG
-                        
-                        # Create namespace if not exists
-                        kubectl apply -f k8s/namespaces.yaml
-                        
-                        # Deploy Cast Service
-                        helm upgrade --install cast-dev charts/cast-service \\
-                            --namespace dev \\
-                            --set image.tag=${IMAGE_TAG} \\
-                            --set replicaCount=1 \\
-                            --wait
-                        
-                        # Deploy Movie Service
-                        helm upgrade --install movie-dev charts/movie-service \\
-                            --namespace dev \\
-                            --set image.tag=${IMAGE_TAG} \\
-                            --set replicaCount=1 \\
-                            --wait
-                    """
+                    withCredentials([file(credentialsId: 'config', variable: 'KUBECONFIG_FILE')]) {
+                        sh """
+                            export KUBECONFIG=\$KUBECONFIG_FILE
+                            
+                            # Create namespace if not exists
+                            kubectl apply -f k8s/namespaces.yaml
+                            
+                            # Deploy Cast Service
+                            helm upgrade --install cast-dev charts/cast-service \\
+                                --namespace dev \\
+                                --set image.tag=${IMAGE_TAG} \\
+                                --set replicaCount=1 \\
+                                --wait
+                            
+                            # Deploy Movie Service
+                            helm upgrade --install movie-dev charts/movie-service \\
+                                --namespace dev \\
+                                --set image.tag=${IMAGE_TAG} \\
+                                --set replicaCount=1 \\
+                                --wait
+                        """
+                    }
                 }
             }
         }
@@ -143,23 +145,25 @@ pipeline {
             steps {
                 script {
                     echo "Deploying to QA environment"
-                    sh """
-                        export KUBECONFIG=\$KUBE_CONFIG
-                        
-                        # Deploy Cast Service
-                        helm upgrade --install cast-qa charts/cast-service \\
-                            --namespace qa \\
-                            --set image.tag=${IMAGE_TAG} \\
-                            --set replicaCount=2 \\
-                            --wait
-                        
-                        # Deploy Movie Service
-                        helm upgrade --install movie-qa charts/movie-service \\
-                            --namespace qa \\
-                            --set image.tag=${IMAGE_TAG} \\
-                            --set replicaCount=2 \\
-                            --wait
-                    """
+                    withCredentials([file(credentialsId: 'config', variable: 'KUBECONFIG_FILE')]) {
+                        sh """
+                            export KUBECONFIG=\$KUBECONFIG_FILE
+                            
+                            # Deploy Cast Service
+                            helm upgrade --install cast-qa charts/cast-service \\
+                                --namespace qa \\
+                                --set image.tag=${IMAGE_TAG} \\
+                                --set replicaCount=2 \\
+                                --wait
+                            
+                            # Deploy Movie Service
+                            helm upgrade --install movie-qa charts/movie-service \\
+                                --namespace qa \\
+                                --set image.tag=${IMAGE_TAG} \\
+                                --set replicaCount=2 \\
+                                --wait
+                        """
+                    }
                 }
             }
         }
@@ -168,23 +172,25 @@ pipeline {
             steps {
                 script {
                     echo "Deploying to Staging environment"
-                    sh """
-                        export KUBECONFIG=\$KUBE_CONFIG
-                        
-                        # Deploy Cast Service
-                        helm upgrade --install cast-staging charts/cast-service \\
-                            --namespace staging \\
-                            --set image.tag=${IMAGE_TAG} \\
-                            --set replicaCount=3 \\
-                            --wait
-                        
-                        # Deploy Movie Service
-                        helm upgrade --install movie-staging charts/movie-service \\
-                            --namespace staging \\
-                            --set image.tag=${IMAGE_TAG} \\
-                            --set replicaCount=3 \\
-                            --wait
-                    """
+                    withCredentials([file(credentialsId: 'config', variable: 'KUBECONFIG_FILE')]) {
+                        sh """
+                            export KUBECONFIG=\$KUBECONFIG_FILE
+                            
+                            # Deploy Cast Service
+                            helm upgrade --install cast-staging charts/cast-service \\
+                                --namespace staging \\
+                                --set image.tag=${IMAGE_TAG} \\
+                                --set replicaCount=3 \\
+                                --wait
+                            
+                            # Deploy Movie Service
+                            helm upgrade --install movie-staging charts/movie-service \\
+                                --namespace staging \\
+                                --set image.tag=${IMAGE_TAG} \\
+                                --set replicaCount=3 \\
+                                --wait
+                        """
+                    }
                 }
             }
         }
@@ -211,23 +217,25 @@ pipeline {
             steps {
                 script {
                     echo "Deploying to Production environment"
-                    sh """
-                        export KUBECONFIG=\$KUBE_CONFIG
-                        
-                        # Deploy Cast Service
-                        helm upgrade --install cast-prod charts/cast-service \\
-                            --namespace prod \\
-                            --set image.tag=${IMAGE_TAG} \\
-                            --set replicaCount=5 \\
-                            --wait
-                        
-                        # Deploy Movie Service
-                        helm upgrade --install movie-prod charts/movie-service \\
-                            --namespace prod \\
-                            --set image.tag=${IMAGE_TAG} \\
-                            --set replicaCount=5 \\
-                            --wait
-                    """
+                    withCredentials([file(credentialsId: 'config', variable: 'KUBECONFIG_FILE')]) {
+                        sh """
+                            export KUBECONFIG=\$KUBECONFIG_FILE
+                            
+                            # Deploy Cast Service
+                            helm upgrade --install cast-prod charts/cast-service \\
+                                --namespace prod \\
+                                --set image.tag=${IMAGE_TAG} \\
+                                --set replicaCount=5 \\
+                                --wait
+                            
+                            # Deploy Movie Service
+                            helm upgrade --install movie-prod charts/movie-service \\
+                                --namespace prod \\
+                                --set image.tag=${IMAGE_TAG} \\
+                                --set replicaCount=5 \\
+                                --wait
+                        """
+                    }
                 }
             }
         }
@@ -237,14 +245,20 @@ pipeline {
         always {
             script {
                 echo "Cleaning up Docker images"
+                // Use environment variables if available, fallback to hardcoded values
+                def dockerRegistry = env.DOCKER_REGISTRY ?: 'ctonn3000'
+                def imageTag = env.IMAGE_TAG ?: "${env.BUILD_NUMBER}-${env.GIT_COMMIT[0..7]}"
+                
                 sh """
                     # Clean up local images to save space
-                    docker rmi ${DOCKER_REGISTRY}/cast-service:${IMAGE_TAG} || true
-                    docker rmi ${DOCKER_REGISTRY}/movie-service:${IMAGE_TAG} || true
+                    docker rmi ${dockerRegistry}/cast-service:${imageTag} || true
+                    docker rmi ${dockerRegistry}/movie-service:${imageTag} || true
+                    docker rmi ${dockerRegistry}/cast-service:latest || true
+                    docker rmi ${dockerRegistry}/movie-service:latest || true
                     
                     # Remove test containers if they exist
-                    docker rm -f cast-test-${BUILD_NUMBER} || true
-                    docker rm -f movie-test-${BUILD_NUMBER} || true
+                    docker rm -f cast-test-${env.BUILD_NUMBER} || true
+                    docker rm -f movie-test-${env.BUILD_NUMBER} || true
                 """
             }
         }
@@ -253,6 +267,9 @@ pipeline {
         }
         failure {
             echo "Pipeline failed! 😞 Check the logs for details."
+            mail to: "fall-lewis.y@datascientest.com",
+                 subject: "${env.JOB_NAME} - Build # ${env.BUILD_ID} has failed",
+                 body: "Pipeline failed. Check console at ${env.BUILD_URL}"
         }
     }
 }
